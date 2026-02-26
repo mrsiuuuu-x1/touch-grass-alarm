@@ -16,8 +16,9 @@ class Dashboard(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title(APP_TITLE)
-        self.geometry("520x900")   # taller to fit camera panel
-        self.resizable(False, False)
+        self.geometry("520x700")
+        self.minsize(520, 400)
+        self.resizable(False, True)   # allow vertical resize
 
         self._fact_index    = 0
         self._overlay_open  = False
@@ -36,9 +37,9 @@ class Dashboard(ctk.CTk):
     def _build(self):
         self.configure(fg_color=LEVEL_COLORS[AlertLevel.HEALTHY]["bg"])
 
-        # ── Header ─────────────────────────────────────────────────────────────
+        # ── Pinned header (outside scroll) ─────────────────────────────────────
         header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(fill="x", padx=24, pady=(28, 0))
+        header.pack(fill="x", padx=24, pady=(20, 0))
 
         self._title_lbl = ctk.CTkLabel(
             header, text="🌱  Touch Grass Alarm",
@@ -53,11 +54,25 @@ class Dashboard(ctk.CTk):
         )
         self._status_badge.pack(side="right", pady=4)
 
-        make_divider(self, color="#2a3a2a")
+        ctk.CTkFrame(self, height=1, fg_color="#2a3a2a").pack(fill="x", padx=24, pady=(10, 0))
+
+        # ── Scrollable body ────────────────────────────────────────────────────
+        # All content below the header lives inside this frame.
+        # Mousewheel scrolling works automatically on Windows.
+        self._scroll = ctk.CTkScrollableFrame(
+            self,
+            fg_color="transparent",
+            scrollbar_button_color="#2a4a2a",
+            scrollbar_button_hover_color="#3a6a3a",
+        )
+        self._scroll.pack(fill="both", expand=True, padx=0, pady=0)
+
+        # From here on, every widget uses self._scroll as parent ───────────────
+        s = self._scroll   # shorthand
 
         # ── Timer card ─────────────────────────────────────────────────────────
-        timer_card = ctk.CTkFrame(self, corner_radius=16, fg_color="#0f1f0f")
-        timer_card.pack(fill="x", padx=24, pady=4)
+        timer_card = ctk.CTkFrame(s, corner_radius=16, fg_color="#0f1f0f")
+        timer_card.pack(fill="x", padx=24, pady=(12, 4))
 
         ctk.CTkLabel(
             timer_card, text="TIME INDOORS",
@@ -79,22 +94,22 @@ class Dashboard(ctk.CTk):
 
         # ── Progress bar ───────────────────────────────────────────────────────
         self._progress = ctk.CTkProgressBar(
-            self, height=8, corner_radius=4,
+            s, height=8, corner_radius=4,
             fg_color="#1e2e1e", progress_color="#4CAF50",
         )
         self._progress.pack(fill="x", padx=24, pady=(8, 2))
         self._progress.set(0)
 
         self._progress_lbl = ctk.CTkLabel(
-            self, text="0% toward lockout threshold",
+            s, text="0% toward lockout threshold",
             font=ctk.CTkFont(size=11), text_color="#4a6a4a",
         )
         self._progress_lbl.pack(anchor="e", padx=28)
 
-        make_divider(self)
+        make_divider(s)
 
         # ── Health fact card ───────────────────────────────────────────────────
-        fact_card = ctk.CTkFrame(self, corner_radius=12, fg_color="#0f1a0f")
+        fact_card = ctk.CTkFrame(s, corner_radius=12, fg_color="#0f1a0f")
         fact_card.pack(fill="x", padx=24, pady=4)
 
         ctk.CTkLabel(
@@ -109,14 +124,14 @@ class Dashboard(ctk.CTk):
         )
         self._fact_lbl.pack(anchor="w", padx=16, pady=(0, 12))
 
-        make_divider(self)
+        make_divider(s)
 
         # ── Camera panel ───────────────────────────────────────────────────────
-        self._camera_panel = CameraPanel(self, on_reading=self._on_cv_reading)
+        self._camera_panel = CameraPanel(s, on_reading=self._on_cv_reading)
         self._camera_panel.pack(fill="x", padx=24, pady=4)
 
         self._cam_start_btn = ctk.CTkButton(
-            self, text="📷  Enable Webcam Monitoring",
+            s, text="📷  Enable Webcam Monitoring",
             height=36, corner_radius=8,
             fg_color="#1a2e1a", hover_color="#243e24", text_color="#81C784",
             font=ctk.CTkFont(size=12),
@@ -124,10 +139,10 @@ class Dashboard(ctk.CTk):
         )
         self._cam_start_btn.pack(fill="x", padx=24, pady=(0, 4))
 
-        make_divider(self)
+        make_divider(s)
 
         # ── Stats row ──────────────────────────────────────────────────────────
-        stats_frame = ctk.CTkFrame(self, fg_color="transparent")
+        stats_frame = ctk.CTkFrame(s, fg_color="transparent")
         stats_frame.pack(fill="x", padx=24, pady=4)
         stats_frame.columnconfigure((0, 1, 2), weight=1)
 
@@ -135,10 +150,10 @@ class Dashboard(ctk.CTk):
         self._stat_breaks   = make_stat_card(stats_frame, "Breaks Taken",   "0", 1)
         self._stat_streak   = make_stat_card(stats_frame, "🔥 Streak",      "0 days", 2)
 
-        make_divider(self)
+        make_divider(s)
 
         # ── Action buttons ─────────────────────────────────────────────────────
-        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        btn_frame = ctk.CTkFrame(s, fg_color="transparent")
         btn_frame.pack(fill="x", padx=24, pady=4)
         btn_frame.columnconfigure((0, 1), weight=1)
 
@@ -150,7 +165,7 @@ class Dashboard(ctk.CTk):
         )
 
         # ── Demo controls ──────────────────────────────────────────────────────
-        demo_frame = ctk.CTkFrame(self, fg_color="#0a0a0a", corner_radius=10)
+        demo_frame = ctk.CTkFrame(s, fg_color="#0a0a0a", corner_radius=10)
         demo_frame.pack(fill="x", padx=24, pady=(14, 6))
 
         ctk.CTkLabel(
@@ -176,10 +191,15 @@ class Dashboard(ctk.CTk):
 
         # ── Footer ─────────────────────────────────────────────────────────────
         ctk.CTkLabel(
-            self,
+            s,
             text=f"All processing is local · No data stored · v{APP_VERSION}",
             font=ctk.CTkFont(size=10), text_color="#2a3a2a",
-        ).pack(pady=(6, 12))
+        ).pack(pady=(6, 16))
+
+    # ── Theme update (must also recolour the scroll container) ────────────────
+    def _apply_bg(self, color: str):
+        self.configure(fg_color=color)
+        self._scroll.configure(fg_color="transparent")
 
     # ── Callbacks from Session ─────────────────────────────────────────────────
     def _on_tick(self):
@@ -208,7 +228,7 @@ class Dashboard(ctk.CTk):
 
     def _on_level_change(self, level: AlertLevel):
         colors = LEVEL_COLORS[level]
-        self.configure(fg_color=colors["bg"])
+        self._apply_bg(colors["bg"])
         self._timer_lbl.configure(text_color=colors["accent"])
         self._progress.configure(progress_color=colors["accent"])
         self._title_lbl.configure(text_color=colors["text"])
