@@ -1,4 +1,4 @@
-data/stats.json
+data/
 __pycache__/
 *.pyc
 *.pyo
