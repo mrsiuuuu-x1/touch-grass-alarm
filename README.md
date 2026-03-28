@@ -32,6 +32,7 @@ touch_grass/
 │   ├── config.py                  ← Thresholds, colours, health facts
 │   ├── session.py                 ← Timer, alert level, break tracking
 │   ├── cv_engine.py               ← Webcam analysis (pallor, lighting, blue cast)
+│   ├── stats_db.py                ← Persistent stats (streaks, breaks, sessions)
 │   └── verification_server.py    ← Local HTTP server for mobile unlock flow
 │
 ├── ui/                            ← All visual components
@@ -40,6 +41,9 @@ touch_grass/
 │   ├── overlay.py                 ← Critical-level warning popup
 │   ├── lockout.py                 ← Lockout screen with QR + backup code
 │   └── widgets.py                 ← Reusable buttons, stat cards, dividers
+│
+├── data/                          ← Auto-created at runtime, gitignored
+│   └── stats.json                 ← Persistent stats (do not edit manually)
 │
 └── assets/                        ← Icons, sounds (empty — add yours here)
 ```
@@ -88,6 +92,20 @@ THRESHOLDS = {
 
 ---
 
+## Stats & Streaks
+
+Stats are saved automatically to `data/stats.json` and persist across sessions.
+
+| Stat | Logic |
+|---|---|
+| Sessions Today | Increments on each app launch, resets to 1 at midnight |
+| Breaks Taken | All-time total, never resets |
+| 🔥 Streak | Days in a row with at least one outdoor break — resets if you miss a day |
+
+The `data/` folder is gitignored — it lives only on your machine.
+
+---
+
 ## Mobile Unlock Flow
 
 When the lockout screen appears:
@@ -105,7 +123,6 @@ The local server runs on port `8080` by default. If that port is busy, it picks 
 Currently in **relaxed mode** — any submitted photo unlocks. To enable outdoor colour analysis, open `core/verification_server.py` and change:
 
 ```python
-# Line ~80
 MODE = "relaxed"   # ← change to "strict"
 ```
 
@@ -136,7 +153,7 @@ Click **Calibrate Baseline Now** in the camera panel after sitting down in good 
 | Scrollable dashboard + alert states | ✅ Done |
 | CV webcam detection | ✅ Done |
 | Mobile verification (WiFi + backup code) | ✅ Done |
-| Stats persistence & streaks across sessions | ⬜ Planned |
+| Stats persistence & streaks across sessions | ✅ Done |
 | Real Windows lockout (blocks keyboard/mouse) | ⬜ Planned |
 | Settings screen (adjust thresholds in UI) | ⬜ Planned |
 | Strict photo verification (sky/brightness check) | ⬜ Planned |
