@@ -27,10 +27,10 @@ class StatsDB:
         self._data = _defaults()
 
     def load(self):
-        os.makedirs(os.path.dirname(self._path), exist_ok=True)
-        if os.path.exists(self._path):
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        if os.path.exists(self.path):
             try:
-                with open(self._path, "r", encoding="utf-8") as f:
+                with open(self.path, "r", encoding="utf-8") as f:
                     saved = json.load(f)
                 self._data = {**_defaults(), **saved}
             except (json.JSONDecodeError, OSError):
@@ -45,8 +45,8 @@ class StatsDB:
             self._save()
         
     def _save(self):
-        os.makedirs(os.path.dirname(self._path), exist_ok=True)
-        with open(self._path, "w", encoding="utf-8") as f:
+        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        with open(self.path, "w", encoding="utf-8") as f:
             json.dump(self._data,f,indent=2)
     
     # Mutations
