@@ -1,11 +1,4 @@
-"""
-lockout.py — The lockout screen shown when the user has been indoors too long.
-Cannot be closed without a valid unlock code.
-Phase 3 will replace the placeholder code check with real verification.
-"""
-
 import customtkinter as ctk
-
 
 class LockoutScreen(ctk.CTkToplevel):
     def __init__(self, parent, on_unlock):
@@ -17,7 +10,6 @@ class LockoutScreen(ctk.CTkToplevel):
         self.configure(fg_color="#0a0000")
         self.grab_set()
 
-        # Prevent closing with the X button
         self.protocol("WM_DELETE_WINDOW", lambda: None)
 
         self._on_unlock   = on_unlock
@@ -56,7 +48,7 @@ class LockoutScreen(ctk.CTkToplevel):
             justify="left",
         ).pack(pady=8)
 
-        # ── Unlock code entry ──────────────────────────────────────────────────
+        # Unlock code entry
         code_frame = ctk.CTkFrame(self, fg_color="#1a0000", corner_radius=10)
         code_frame.pack(pady=12, padx=40, fill="x")
 
@@ -90,25 +82,13 @@ class LockoutScreen(ctk.CTkToplevel):
     def _try_unlock(self):
         code = self._code_entry.get().strip()
 
-        # ── Placeholder validation ─────────────────────────────────────────────
-        # Phase 3: replace this with a real code check against the backend.
+        # Placeholder validation
         if len(code) == 6:
             self.grab_release()
             self.destroy()
             self._on_unlock()
         else:
             self._error_label.configure(text="Invalid code — go touch some grass! 🌱")
-"""
-lockout.py — Lockout screen with mobile verification.
-
-Shows:
-  - QR code to scan with phone (WiFi mode)
-  - Direct URL as text fallback
-  - Backup 6-digit code (no-WiFi fallback)
-  - Manual code entry field
-
-Cannot be closed without a valid unlock code.
-"""
 
 import customtkinter as ctk
 import threading
@@ -124,7 +104,7 @@ class LockoutScreen(ctk.CTkToplevel):
         self.resizable(False, False)
         self.configure(fg_color="#0a0000")
         self.grab_set()
-        self.protocol("WM_DELETE_WINDOW", lambda: None)  # no closing without code
+        self.protocol("WM_DELETE_WINDOW", lambda: None)
 
         self._on_unlock   = on_unlock
         self._server      = None
@@ -135,10 +115,9 @@ class LockoutScreen(ctk.CTkToplevel):
         self._build()
         self._start_server()
 
-    # ── Build UI ───────────────────────────────────────────────────────────────
+    # Build UI
 
     def _build(self):
-        # ── Pinned top ─────────────────────────────────────────────────────────
         ctk.CTkLabel(self, text="🔒", font=ctk.CTkFont(size=56)).pack(pady=(24, 0))
 
         ctk.CTkLabel(
@@ -155,7 +134,7 @@ class LockoutScreen(ctk.CTkToplevel):
 
         ctk.CTkFrame(self, height=1, fg_color="#3a0000").pack(fill="x", padx=24, pady=10)
 
-        # ── Scrollable body ────────────────────────────────────────────────────
+        # Scrollable body
         scroll = ctk.CTkScrollableFrame(
             self, fg_color="transparent",
             scrollbar_button_color="#3a1a1a",
@@ -163,7 +142,7 @@ class LockoutScreen(ctk.CTkToplevel):
         )
         scroll.pack(fill="both", expand=True)
 
-        # ── QR / WiFi card ─────────────────────────────────────────────────────
+        # QR / WiFi card
         conn_card = ctk.CTkFrame(scroll, fg_color="#1a0000", corner_radius=12)
         conn_card.pack(fill="x", padx=24, pady=(8, 4))
 
@@ -172,7 +151,6 @@ class LockoutScreen(ctk.CTkToplevel):
             font=ctk.CTkFont(size=11, weight="bold"), text_color="#EF9A9A",
         ).pack(pady=(12, 4))
 
-        # QR placeholder — swapped for real QR once server is ready
         self._qr_frame = ctk.CTkFrame(
             conn_card, fg_color="#0a0000", corner_radius=8, width=180, height=180,
         )
@@ -198,7 +176,7 @@ class LockoutScreen(ctk.CTkToplevel):
             font=ctk.CTkFont(size=10, slant="italic"), text_color="#5a2a2a",
         ).pack(pady=(0, 12))
 
-        # ── Backup code card ───────────────────────────────────────────────────
+        # Backup code card
         backup_card = ctk.CTkFrame(scroll, fg_color="#1a0a00", corner_radius=12)
         backup_card.pack(fill="x", padx=24, pady=4)
 
@@ -230,7 +208,7 @@ class LockoutScreen(ctk.CTkToplevel):
         )
         self._copy_btn.pack(pady=(0, 12))
 
-        # ── Code entry card ────────────────────────────────────────────────────
+        # Code entry card
         entry_card = ctk.CTkFrame(scroll, fg_color="#1a0000", corner_radius=12)
         entry_card.pack(fill="x", padx=24, pady=4)
 
@@ -268,7 +246,7 @@ class LockoutScreen(ctk.CTkToplevel):
             command=self._try_unlock,
         ).pack(pady=(4, 14))
 
-        # ── Steps reminder ─────────────────────────────────────────────────────
+        # Steps reminder
         steps_card = ctk.CTkFrame(scroll, fg_color="#0f0000", corner_radius=10)
         steps_card.pack(fill="x", padx=24, pady=(4, 16))
 
@@ -285,7 +263,7 @@ class LockoutScreen(ctk.CTkToplevel):
 
         ctk.CTkLabel(steps_card, text="").pack(pady=4)
 
-    # ── Server startup ─────────────────────────────────────────────────────────
+    # Server startup
 
     def _start_server(self):
         def _run():
@@ -326,7 +304,6 @@ class LockoutScreen(ctk.CTkToplevel):
             lbl.place(relx=0.5, rely=0.5, anchor="center")
 
         except ImportError:
-            # qrcode not installed — show URL text instead
             self._qr_placeholder.configure(
                 text=f"Open in phone browser:\n{url}",
                 text_color="#EF9A9A",
@@ -334,7 +311,7 @@ class LockoutScreen(ctk.CTkToplevel):
                 justify="center",
             )
 
-    # ── Unlock logic ───────────────────────────────────────────────────────────
+    # Unlock logic
 
     def _on_photo_verified(self, unlock_code: str):
         """Called by server thread when phone submits valid photo."""

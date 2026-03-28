@@ -1,14 +1,3 @@
-"""
-cv_engine.py — Webcam analysis engine.
-Detects skin pallor and ambient lighting changes using OpenCV + MediaPipe.
-
-Compatible with mediapipe 0.10+ (new Tasks API, no mp.solutions).
-Also falls back gracefully to whole-frame colour if face detection fails.
-
-Dependencies:
-    pip install opencv-python mediapipe numpy
-"""
-
 import cv2
 import numpy as np
 import threading
@@ -17,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Callable, Tuple
 
 
-# ── Landmark indices for cheek / forehead skin ─────────────────────────────────
+# Landmark indices for cheek / forehead skin
 _SKIN_LANDMARKS = [
     10, 338, 297, 332, 284,   # forehead
     93, 132, 58,  172, 136,   # left cheek
@@ -25,7 +14,7 @@ _SKIN_LANDMARKS = [
 ]
 
 
-# ── Data Classes ───────────────────────────────────────────────────────────────
+# Data Classes
 
 @dataclass
 class Baseline:
@@ -45,21 +34,12 @@ class CVReading:
     frame:           Optional[np.ndarray] = None
 
 
-# ── Face detector factory ──────────────────────────────────────────────────────
+# Face detector factory
 
 def _make_detector() -> Tuple[str, object]:
-    """
-    Returns (detector_type, detector_object).
-    detector_type is one of: "tasks", "legacy", "none"
-
-    Tries in order:
-      1. mediapipe Tasks API (0.10+)  — needs a .task model file
-      2. mp.solutions legacy API      — works on older installs
-      3. None                         — whole-frame fallback, no face tracking
-    """
     import mediapipe as mp
 
-    # ── 1. Try Tasks API ──────────────────────────────────────────────────────
+    # Try Tasks API
     try:
         from mediapipe.tasks.python import vision as mp_vision
         from mediapipe.tasks.python import BaseOptions
@@ -84,7 +64,7 @@ def _make_detector() -> Tuple[str, object]:
     except Exception:
         pass
 
-    # ── 2. Try legacy mp.solutions ────────────────────────────────────────────
+    # Try legacy mp.solutions
     try:
         face_mesh = mp.solutions.face_mesh.FaceMesh(
             static_image_mode=False,
@@ -97,20 +77,13 @@ def _make_detector() -> Tuple[str, object]:
     except Exception:
         pass
 
-    # ── 3. No face detection available ────────────────────────────────────────
+    # No face detection available
     return ("none", None)
 
 
-# ── CV Engine ──────────────────────────────────────────────────────────────────
+# CV Engine
 
 class CVEngine:
-    """
-    Reads webcam frames on a background thread and emits CVReading objects.
-
-    All face detection happens lazily — if mediapipe is unavailable or the
-    model download fails, the engine falls back to whole-frame colour analysis.
-    """
-
     def __init__(
         self,
         camera_index:    int   = 0,
@@ -132,7 +105,7 @@ class CVEngine:
         self._detector        = None
         self._detector_ready  = False
 
-    # ── Lifecycle ──────────────────────────────────────────────────────────────
+    # Lifecycle
 
     def start(self) -> bool:
         self._cap = cv2.VideoCapture(self.camera_index)
@@ -171,7 +144,7 @@ class CVEngine:
         with self._lock:
             return self._baseline is not None
 
-    # ── Detector init (background) ─────────────────────────────────────────────
+    # Detector init (background)
 
     def _init_detector(self):
         try:
@@ -181,9 +154,9 @@ class CVEngine:
             self._detector_ready = True
         except Exception as e:
             self._detector_type  = "none"
-            self._detector_ready = True  # ready, just no face tracking
+            self._detector_ready = True
 
-    # ── Main capture loop ──────────────────────────────────────────────────────
+    # Main capture loop
 
     def _loop(self):
         last_sample = 0.0
@@ -208,7 +181,7 @@ class CVEngine:
         ret, frame = self._cap.read()
         return frame if ret else None
 
-    # ── Analysis ───────────────────────────────────────────────────────────────
+    # Analysis
 
     def _analyse(self, frame: np.ndarray) -> Optional[CVReading]:
         with self._lock:
@@ -241,7 +214,7 @@ class CVEngine:
             frame=frame.copy(),
         )
 
-    # ── Skin sampling ──────────────────────────────────────────────────────────
+    # Skin sampling
 
     def _sample_skin(self, frame: np.ndarray) -> Optional[np.ndarray]:
         if not self._detector_ready or self._detector is None:
@@ -290,7 +263,7 @@ class CVEngine:
         bgr = np.vstack(pixels).astype(np.float32).mean(axis=0)
         return np.array([bgr[2], bgr[1], bgr[0]])  # BGR → RGB
 
-    # ── Frame helpers ──────────────────────────────────────────────────────────
+    # Frame helpers
 
     def _frame_mean_rgb(self, frame: np.ndarray) -> np.ndarray:
         m = frame.mean(axis=(0, 1))
@@ -303,7 +276,7 @@ class CVEngine:
         r, _, b = rgb
         return float(r / (b + 1e-6))
 
-    # ── Metric computations ────────────────────────────────────────────────────
+    # Metric computations
 
     def _compute_pallor(self, cur_rgb: np.ndarray, base_rgb: np.ndarray) -> float:
         def to_sv(rgb):
@@ -323,7 +296,7 @@ class CVEngine:
     def _compute_blue_cast(self, cur_warmth: float, base_warmth: float) -> float:
         return min(max(0.0, base_warmth - cur_warmth) / 0.3, 1.0)
 
-    # ── Annotated preview ──────────────────────────────────────────────────────
+    # Annotated preview
 
     def get_annotated_frame(self, frame: np.ndarray, reading: CVReading) -> np.ndarray:
         out = frame.copy()

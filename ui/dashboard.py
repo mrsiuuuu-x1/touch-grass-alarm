@@ -1,8 +1,3 @@
-"""
-dashboard.py — The main app window.
-Displays the timer, progress bar, health facts, stats, and action buttons.
-"""
-
 import customtkinter as ctk
 from core.config import AlertLevel, LEVEL_COLORS, HEALTH_FACTS, APP_TITLE, APP_VERSION
 from core.session import Session
@@ -18,12 +13,11 @@ class Dashboard(ctk.CTk):
         self.title(APP_TITLE)
         self.geometry("520x700")
         self.minsize(520, 400)
-        self.resizable(False, True)   # allow vertical resize
+        self.resizable(False, True)
 
-        self._fact_index    = 0
-        self._overlay_open  = False
+        self._fact_index = 0
+        self._overlay_open = False
 
-        # Wire up session callbacks
         self.session = Session(
             on_tick=lambda s: self.after(0, self._on_tick),
             on_level_change=lambda l: self.after(0, lambda: self._on_level_change(l)),
@@ -33,11 +27,11 @@ class Dashboard(ctk.CTk):
         self.session.start()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-    # ── Build UI ───────────────────────────────────────────────────────────────
+    # Build UI
     def _build(self):
         self.configure(fg_color=LEVEL_COLORS[AlertLevel.HEALTHY]["bg"])
 
-        # ── Pinned header (outside scroll) ─────────────────────────────────────
+        # Pinned header (outside scroll)
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 0))
 
@@ -56,9 +50,7 @@ class Dashboard(ctk.CTk):
 
         ctk.CTkFrame(self, height=1, fg_color="#2a3a2a").pack(fill="x", padx=24, pady=(10, 0))
 
-        # ── Scrollable body ────────────────────────────────────────────────────
-        # All content below the header lives inside this frame.
-        # Mousewheel scrolling works automatically on Windows.
+        # Scrollable body
         self._scroll = ctk.CTkScrollableFrame(
             self,
             fg_color="transparent",
@@ -67,10 +59,9 @@ class Dashboard(ctk.CTk):
         )
         self._scroll.pack(fill="both", expand=True, padx=0, pady=0)
 
-        # From here on, every widget uses self._scroll as parent ───────────────
-        s = self._scroll   # shorthand
+        s = self._scroll
 
-        # ── Timer card ─────────────────────────────────────────────────────────
+        # Timer card
         timer_card = ctk.CTkFrame(s, corner_radius=16, fg_color="#0f1f0f")
         timer_card.pack(fill="x", padx=24, pady=(12, 4))
 
@@ -92,7 +83,7 @@ class Dashboard(ctk.CTk):
         )
         self._next_warning_lbl.pack(pady=(0, 16))
 
-        # ── Progress bar ───────────────────────────────────────────────────────
+        # Progress bar
         self._progress = ctk.CTkProgressBar(
             s, height=8, corner_radius=4,
             fg_color="#1e2e1e", progress_color="#4CAF50",
@@ -108,7 +99,7 @@ class Dashboard(ctk.CTk):
 
         make_divider(s)
 
-        # ── Health fact card ───────────────────────────────────────────────────
+        # Health fact card
         fact_card = ctk.CTkFrame(s, corner_radius=12, fg_color="#0f1a0f")
         fact_card.pack(fill="x", padx=24, pady=4)
 
@@ -126,7 +117,7 @@ class Dashboard(ctk.CTk):
 
         make_divider(s)
 
-        # ── Camera panel ───────────────────────────────────────────────────────
+        # Camera panel
         self._camera_panel = CameraPanel(s, on_reading=self._on_cv_reading)
         self._camera_panel.pack(fill="x", padx=24, pady=4)
 
@@ -141,7 +132,7 @@ class Dashboard(ctk.CTk):
 
         make_divider(s)
 
-        # ── Stats row ──────────────────────────────────────────────────────────
+        # Stats row
         stats_frame = ctk.CTkFrame(s, fg_color="transparent")
         stats_frame.pack(fill="x", padx=24, pady=4)
         stats_frame.columnconfigure((0, 1, 2), weight=1)
@@ -152,7 +143,7 @@ class Dashboard(ctk.CTk):
 
         make_divider(s)
 
-        # ── Action buttons ─────────────────────────────────────────────────────
+        # Action buttons
         btn_frame = ctk.CTkFrame(s, fg_color="transparent")
         btn_frame.pack(fill="x", padx=24, pady=4)
         btn_frame.columnconfigure((0, 1), weight=1)
@@ -164,7 +155,7 @@ class Dashboard(ctk.CTk):
             row=0, column=1, padx=(6, 0), sticky="ew"
         )
 
-        # ── Demo controls ──────────────────────────────────────────────────────
+        # Demo controls
         demo_frame = ctk.CTkFrame(s, fg_color="#0a0a0a", corner_radius=10)
         demo_frame.pack(fill="x", padx=24, pady=(14, 6))
 
@@ -189,19 +180,19 @@ class Dashboard(ctk.CTk):
                 command=lambda l=level: self._demo_jump(l),
             ).pack(side="left", padx=4)
 
-        # ── Footer ─────────────────────────────────────────────────────────────
+        # Footer
         ctk.CTkLabel(
             s,
             text=f"All processing is local · No data stored · v{APP_VERSION}",
             font=ctk.CTkFont(size=10), text_color="#2a3a2a",
         ).pack(pady=(6, 16))
 
-    # ── Theme update (must also recolour the scroll container) ────────────────
+    # ── Theme update
     def _apply_bg(self, color: str):
         self.configure(fg_color=color)
         self._scroll.configure(fg_color="transparent")
 
-    # ── Callbacks from Session ─────────────────────────────────────────────────
+    # Callbacks from Session
     def _on_tick(self):
         s = self.session
 
@@ -221,7 +212,6 @@ class Dashboard(ctk.CTk):
         else:
             self._next_warning_lbl.configure(text="⚠️  Lockout threshold reached!")
 
-        # Rotate facts every 15 s
         if s.elapsed_seconds % 15 == 0:
             self._fact_index = (self._fact_index + 1) % len(HEALTH_FACTS)
             self._fact_lbl.configure(text=HEALTH_FACTS[self._fact_index])
@@ -240,7 +230,7 @@ class Dashboard(ctk.CTk):
         elif level == AlertLevel.LOCKOUT:
             self._open_lockout()
 
-    # ── Overlay & Lockout ──────────────────────────────────────────────────────
+    # Overlay & Lockout
     def _open_overlay(self):
         self._overlay_open = True
 
@@ -259,7 +249,7 @@ class Dashboard(ctk.CTk):
     def _open_lockout(self):
         LockoutScreen(self, on_unlock=self._reset_after_unlock)
 
-    # ── Actions ────────────────────────────────────────────────────────────────
+    # Actions
     def _snooze(self):
         self.session.snooze()
         self._on_level_change(AlertLevel.HEALTHY)
@@ -297,7 +287,6 @@ class Dashboard(ctk.CTk):
         to reflect detected indoor strain — even if the timer is short.
         (Optional: tie CV score directly to threshold acceleration.)
         """
-        # For now: just log. Phase 3 will use this to adjust thresholds dynamically.
         pass
 
     def _on_close(self):

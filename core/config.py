@@ -1,12 +1,7 @@
-"""
-config.py — All constants, thresholds, colours, and health facts.
-Change values here without touching any other file.
-"""
-
 from enum import Enum
 
 
-# ── Alert Levels ───────────────────────────────────────────────────────────────
+# Alert Levels
 class AlertLevel(Enum):
     HEALTHY  = 0
     WARNING  = 1
@@ -14,17 +9,14 @@ class AlertLevel(Enum):
     LOCKOUT  = 3
 
 
-# ── Time Thresholds ────────────────────────────────────────────────────────────
+# Time Thresholds
 # Set to small values for easy testing.
-# For production swap to: WARNING=7200, CRITICAL=10800, LOCKOUT=14400
 THRESHOLDS = {
     AlertLevel.WARNING:  30,
     AlertLevel.CRITICAL: 60,
     AlertLevel.LOCKOUT:  90,
 }
 
-
-# ── Colour Palette per Alert Level ────────────────────────────────────────────
 LEVEL_COLORS = {
     AlertLevel.HEALTHY:  {"bg": "#1a2e1a", "accent": "#4CAF50", "text": "#81C784", "label": "Healthy 🌿"},
     AlertLevel.WARNING:  {"bg": "#2e2a1a", "accent": "#FFC107", "text": "#FFD54F", "label": "Warning ⚠️"},
@@ -33,7 +25,7 @@ LEVEL_COLORS = {
 }
 
 
-# ── Health Facts (rotated every 15 s) ─────────────────────────────────────────
+# Health Facts (rotated every 15 s)
 HEALTH_FACTS = [
     "Sunlight boosts serotonin — your brain's natural mood stabiliser.",
     "15 minutes outside can reduce cortisol levels by up to 21%.",
@@ -45,7 +37,7 @@ HEALTH_FACTS = [
 ]
 
 
-# ── App Meta ───────────────────────────────────────────────────────────────────
+# App Meta
 APP_TITLE   = "Touch Grass Alarm 🌱"
 APP_VERSION = "0.1"
 WINDOW_SIZE = "520x740"

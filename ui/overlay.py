@@ -1,7 +1,3 @@
-"""
-overlay.py — The aggressive full-screen warning shown at Critical level.
-"""
-
 import customtkinter as ctk
 
 
@@ -14,7 +10,7 @@ class OverlayWarning(ctk.CTkToplevel):
         self.geometry("480x340")
         self.resizable(False, False)
         self.configure(fg_color="#1a0a00")
-        self.grab_set()  # Modal — blocks the main window
+        self.grab_set()
 
         self._on_snooze      = on_snooze
         self._on_go_outside  = on_go_outside
@@ -71,7 +67,6 @@ class OverlayWarning(ctk.CTkToplevel):
         self._close()
 
     def _handle_close(self):
-        """User clicked X — treat as a snooze."""
         self._snooze()
 
     def _close(self):

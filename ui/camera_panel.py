@@ -1,9 +1,3 @@
-"""
-camera_panel.py — Toggleable webcam preview panel embedded in the dashboard.
-Shows a live feed with CV score overlays.
-Can be minimised to a slim status bar or expanded to show the full preview.
-"""
-
 import customtkinter as ctk
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -44,10 +38,10 @@ class CameraPanel(ctk.CTkFrame):
 
         self._build()
 
-    # ── Build UI ───────────────────────────────────────────────────────────────
+    # Build UI
 
     def _build(self):
-        # ── Header row (always visible) ───────────────────────────────────────
+        # Header row
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=12, pady=(10, 0))
 
@@ -69,7 +63,7 @@ class CameraPanel(ctk.CTkFrame):
         )
         self._status_dot.pack(side="right", padx=(0, 8))
 
-        # ── Collapsible body ──────────────────────────────────────────────────
+        # Collapsible body
         self._body = ctk.CTkFrame(self, fg_color="transparent")
         self._body.pack(fill="x", padx=12, pady=(6, 0))
 
@@ -123,7 +117,7 @@ class CameraPanel(ctk.CTkFrame):
             font=ctk.CTkFont(size=11), text_color="#4a6a4a",
         )
 
-    # ── Toggle expanded/minimised ──────────────────────────────────────────────
+    # Toggle expanded/minimised
 
     def _toggle(self):
         self._expanded = not self._expanded
@@ -136,7 +130,7 @@ class CameraPanel(ctk.CTkFrame):
             self._mini_bar.pack(padx=12, pady=(2, 10))
             self._toggle_btn.configure(text="▼ Expand")
 
-    # ── Engine control ─────────────────────────────────────────────────────────
+    # Engine control
 
     def start_camera(self, camera_index: int = 0) -> bool:
         """Start the CV engine and begin updating the preview."""
@@ -150,9 +144,7 @@ class CameraPanel(ctk.CTkFrame):
         if ok:
             self._running = True
             self._status_dot.configure(text="● Live", text_color="#4CAF50")
-            # Auto-calibrate after 4 seconds
             threading.Timer(4.0, self._calibrate).start()
-            # Start preview update loop
             self._update_preview()
         else:
             self._status_dot.configure(text="● Error", text_color="#D32F2F")
@@ -172,10 +164,9 @@ class CameraPanel(ctk.CTkFrame):
                 fg_color="#1a3a1a", text_color="#81C784",
             )
 
-    # ── Preview loop ───────────────────────────────────────────────────────────
+    # Preview loop
 
     def _update_preview(self):
-        """Pull the latest frame from the engine and draw it on the canvas."""
         if not self._running:
             return
 
@@ -196,10 +187,9 @@ class CameraPanel(ctk.CTkFrame):
         # Schedule next update (~15 fps)
         self.after(66, self._update_preview)
 
-    # ── Reading callback ───────────────────────────────────────────────────────
+    # Reading callback
 
     def _on_reading(self, reading: CVReading):
-        """Called from the CV engine thread — schedule UI update on main thread."""
         self._latest_reading = reading
         self.after(0, lambda: self._update_scores(reading))
         if self._on_reading_cb:
@@ -207,9 +197,9 @@ class CameraPanel(ctk.CTkFrame):
 
     def _update_scores(self, reading: CVReading):
         def score_color(s):
-            if s < 0.35:  return "#4CAF50"   # green — fine
-            if s < 0.65:  return "#FFC107"   # amber — warning
-            return "#F44336"                  # red — bad
+            if s < 0.35:  return "#4CAF50"
+            if s < 0.65:  return "#FFC107"
+            return "#F44336"
 
         self._score_labels["pallor"].configure(
             text=f"{reading.pallor_score:.0%}",

@@ -1,18 +1,3 @@
-"""
-verification_server.py — Local HTTP server for mobile unlock verification.
-
-Flow:
-  1. Server starts on a random port (default 8080)
-  2. Lockout screen shows a QR code + URL
-  3. Phone visits http://<pc-ip>:<port>
-  4. User submits a photo (any photo in relaxed mode)
-  5. Server validates and returns a one-time unlock code
-  6. User types code into lockout screen → unlocked
-
-Fallback (no WiFi): a backup code is generated at the same time and
-can be copied to clipboard or displayed.
-"""
-
 import http.server
 import threading
 import socket
@@ -26,10 +11,10 @@ from typing import Optional, Callable
 from urllib.parse import urlparse, parse_qs
 
 
-# ── Code manager ──────────────────────────────────────────────────────────────
+# Code manager
 
 class VerificationCodes:
-    """Generates and validates challenge/unlock code pairs."""
+    #Generates and validates challenge/unlock code pairs.
 
     def __init__(self):
         self._challenge:      str  = ""
@@ -40,10 +25,9 @@ class VerificationCodes:
         self.EXPIRY_SECONDS   = 3600  # 1 hour
 
     def generate(self) -> dict:
-        """Generate fresh codes. Returns a dict with all codes."""
         self._challenge   = secrets.token_hex(8).upper()
-        self._unlock_code = secrets.token_hex(3).upper()  # 6-char hex
-        self._backup_code = str(secrets.randbelow(900000) + 100000)  # 6-digit number
+        self._unlock_code = secrets.token_hex(3).upper()
+        self._backup_code = str(secrets.randbelow(900000) + 100000)
         self._used        = False
         self._generated_at = time.time()
         return {
@@ -53,7 +37,6 @@ class VerificationCodes:
         }
 
     def validate(self, code: str) -> bool:
-        """Returns True if the code matches and hasn't been used/expired."""
         if self._used:
             return False
         if time.time() - self._generated_at > self.EXPIRY_SECONDS:
@@ -77,29 +60,21 @@ class VerificationCodes:
         return self._challenge
 
 
-# ── Photo validator ────────────────────────────────────────────────────────────
+# Photo validator
 
 class PhotoValidator:
-    """
-    Validates submitted photos.
-    Currently in RELAXED mode: any submitted photo passes.
-    To tighten later, implement _check_sky_colours().
-    """
+    #Validates submitted photos.
 
-    MODE = "relaxed"  # Change to "strict" to enable colour analysis
+    MODE = "relaxed"
 
     def validate(self, image_b64: str) -> tuple[bool, str]:
-        """
-        Returns (passed: bool, reason: str).
-        image_b64 is a base64-encoded image (stripped of data URI prefix).
-        """
         if not image_b64:
             return False, "No image received."
 
         if self.MODE == "relaxed":
             return True, "Photo received — enjoy your break! 🌿"
 
-        # ── Strict mode (future) ───────────────────────────────────────────────
+        # Strict mode (future)
         try:
             return self._check_sky_colours(image_b64)
         except Exception as e:
@@ -111,7 +86,6 @@ class PhotoValidator:
         - High blue channel in upper portion (sky)
         - High overall brightness (sunlight)
         - Low blue-cast ratio (not a monitor)
-        Requires: pip install opencv-python numpy
         """
         import cv2
         import numpy as np
@@ -124,13 +98,13 @@ class PhotoValidator:
             return False, "Could not decode image."
 
         h, w    = img.shape[:2]
-        top     = img[:h//3, :, :]          # top third — likely sky
-        mean_b  = float(top[:,:,0].mean())  # blue channel (BGR)
+        top     = img[:h//3, :, :]
+        mean_b  = float(top[:,:,0].mean())
         mean_g  = float(top[:,:,1].mean())
         mean_r  = float(top[:,:,2].mean())
         brightness = float(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).mean())
 
-        sky_score = (mean_b - mean_r) / (mean_r + 1)  # blue dominance
+        sky_score = (mean_b - mean_r) / (mean_r + 1)
 
         if brightness < 60:
             return False, "Photo looks too dark — go outside in the light! ☀️"
@@ -140,7 +114,7 @@ class PhotoValidator:
         return True, "Outdoor photo verified! 🌿"
 
 
-# ── HTML template ──────────────────────────────────────────────────────────────
+# HTML template
 
 def _build_html(challenge: str, unlock_code: Optional[str] = None, message: Optional[str] = None) -> str:
     if unlock_code:
@@ -313,7 +287,7 @@ def _build_html(challenge: str, unlock_code: Optional[str] = None, message: Opti
 </html>"""
 
 
-# ── HTTP handler ───────────────────────────────────────────────────────────────
+# HTTP handler
 
 class _Handler(http.server.BaseHTTPRequestHandler):
     codes:     VerificationCodes = None
@@ -349,7 +323,6 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             html  = _build_html(codes.challenge, unlock_code=codes.unlock_code, message=reason)
             self._send_html(html)
             if self.server.on_unlock:
-                # Notify desktop on a separate thread so response sends first
                 threading.Timer(0.5, self.server.on_unlock, args=[codes.unlock_code]).start()
         else:
             html = _build_html(self.server.codes.challenge, message=reason)
@@ -364,17 +337,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
-# ── Server ─────────────────────────────────────────────────────────────────────
+# Server
 
 class VerificationServer:
-    """
-    Manages the lifecycle of the local HTTP verification server.
-
-    Usage:
-        server = VerificationServer(on_photo_verified=my_callback)
-        info   = server.start()   # returns {"url": ..., "backup_code": ..., "ip": ...}
-        server.stop()
-    """
+    #Manages the lifecycle of the local HTTP verification server.
 
     def __init__(
         self,
@@ -389,11 +355,10 @@ class VerificationServer:
         self._thread           = None
 
     def start(self) -> dict:
-        """Start the server. Returns connection info dict."""
+        #Start the server. Returns connection info dict.
         codes = self.codes.generate()
         ip    = self._local_ip()
 
-        # Try requested port, fall back to OS-assigned if busy
         for attempt_port in [self.port, 0]:
             try:
                 self._httpd = http.server.HTTPServer(("", attempt_port), _Handler)
@@ -404,7 +369,6 @@ class VerificationServer:
         actual_port = self._httpd.server_address[1]
         url         = f"http://{ip}:{actual_port}"
 
-        # Attach state to server instance
         self._httpd.codes     = self.codes
         self._httpd.validator = self.validator
         self._httpd.on_unlock = self.on_photo_verified
@@ -425,12 +389,10 @@ class VerificationServer:
             self._httpd.shutdown()
 
     def validate_code(self, code: str) -> bool:
-        """Validate a manually entered code (unlock or backup)."""
         return self.codes.validate(code)
 
     @staticmethod
     def _local_ip() -> str:
-        """Best-effort local IP detection."""
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))

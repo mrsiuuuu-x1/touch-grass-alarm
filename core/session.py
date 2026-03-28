@@ -1,8 +1,3 @@
-"""
-session.py — Tracks indoor time, alert level, and break stats.
-Pure logic — no UI code lives here.
-"""
-
 import time
 import threading
 from datetime import datetime
@@ -11,10 +6,6 @@ from core.config import AlertLevel, THRESHOLDS
 
 class Session:
     def __init__(self, on_tick=None, on_level_change=None):
-        """
-        on_tick(elapsed_seconds)         — called every second
-        on_level_change(new_level)       — called when alert level changes
-        """
         self.elapsed_seconds  = 0
         self.alert_level      = AlertLevel.HEALTHY
         self.breaks_taken     = 0
@@ -27,7 +18,7 @@ class Session:
         self._running         = False
         self._thread          = None
 
-    # ── Timer control ──────────────────────────────────────────────────────────
+    # Timer control
     def start(self):
         self._running = True
         self._thread  = threading.Thread(target=self._tick_loop, daemon=True)
@@ -50,35 +41,31 @@ class Session:
             if self._on_tick:
                 self._on_tick(self.elapsed_seconds)
 
-    # ── Level logic ────────────────────────────────────────────────────────────
+    # Level logic
     def _compute_level(self) -> AlertLevel:
         for level in [AlertLevel.LOCKOUT, AlertLevel.CRITICAL, AlertLevel.WARNING]:
             if self.elapsed_seconds >= THRESHOLDS[level]:
                 return level
         return AlertLevel.HEALTHY
 
-    # ── Actions ────────────────────────────────────────────────────────────────
+    # Actions
     def snooze(self):
-        """Push elapsed time back just below the warning threshold."""
         self.elapsed_seconds = max(0, THRESHOLDS[AlertLevel.WARNING] - 5)
         self.alert_level = AlertLevel.HEALTHY
 
     def log_outdoor_break(self):
-        """Call this when the user successfully goes outside."""
-        self.breaks_taken  += 1
+        self.breaks_taken += 1
         self.elapsed_seconds = 0
-        self.alert_level     = AlertLevel.HEALTHY
+        self.alert_level = AlertLevel.HEALTHY
 
-    # ── Helpers ────────────────────────────────────────────────────────────────
+    # Helpers
     def time_until_next_warning(self) -> int:
-        """Returns seconds until the next threshold, or 0 if past lockout."""
         for level in [AlertLevel.WARNING, AlertLevel.CRITICAL, AlertLevel.LOCKOUT]:
             if self.elapsed_seconds < THRESHOLDS[level]:
                 return THRESHOLDS[level] - self.elapsed_seconds
         return 0
 
     def lockout_progress(self) -> float:
-        """Returns 0.0–1.0 progress toward the lockout threshold."""
         return min(self.elapsed_seconds / THRESHOLDS[AlertLevel.LOCKOUT], 1.0)
 
     def formatted_elapsed(self) -> str:
@@ -86,9 +73,8 @@ class Session:
         m, s   = divmod(rem, 60)
         return f"{h:02d}:{m:02d}:{s:02d}"
 
-    # ── Demo / testing ─────────────────────────────────────────────────────────
+    # Demo
     def jump_to_level(self, level: AlertLevel):
-        """Instantly set elapsed time to a given level (for demo buttons)."""
         if level == AlertLevel.HEALTHY:
             self.elapsed_seconds = 0
         else:
