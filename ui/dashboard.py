@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from core.config import AlertLevel, LEVEL_COLORS, HEALTH_FACTS, APP_TITLE, APP_VERSION
 from core.session import Session
+from core.stats_db import StatsDB
 from ui.widgets import make_divider, make_stat_card, make_primary_button, make_secondary_button
 from ui.overlay import OverlayWarning
 from ui.lockout import LockoutScreen
@@ -18,6 +19,13 @@ class Dashboard(ctk.CTk):
         self._fact_index = 0
         self._overlay_open = False
 
+        # Load persisted stats
+        self.db = StatsDB()
+        self.db.load()
+        self.db.check_streak_broken()
+        self.db.increment_session()
+
+        # Wire up session callbacks
         self.session = Session(
             on_tick=lambda s: self.after(0, self._on_tick),
             on_level_change=lambda l: self.after(0, lambda: self._on_level_change(l)),
@@ -31,7 +39,6 @@ class Dashboard(ctk.CTk):
     def _build(self):
         self.configure(fg_color=LEVEL_COLORS[AlertLevel.HEALTHY]["bg"])
 
-        # Pinned header (outside scroll)
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 0))
 
@@ -141,6 +148,9 @@ class Dashboard(ctk.CTk):
         self._stat_breaks   = make_stat_card(stats_frame, "Breaks Taken",   "0", 1)
         self._stat_streak   = make_stat_card(stats_frame, "🔥 Streak",      "0 days", 2)
 
+        # Populate from persisted data
+        self._refresh_stat_cards()
+
         make_divider(s)
 
         # Action buttons
@@ -187,7 +197,6 @@ class Dashboard(ctk.CTk):
             font=ctk.CTkFont(size=10), text_color="#2a3a2a",
         ).pack(pady=(6, 16))
 
-    # ── Theme update
     def _apply_bg(self, color: str):
         self.configure(fg_color=color)
         self._scroll.configure(fg_color="transparent")
@@ -256,8 +265,16 @@ class Dashboard(ctk.CTk):
 
     def _go_outside(self):
         self.session.log_outdoor_break()
-        self._stat_breaks.configure(text=str(self.session.breaks_taken))
+        self.db.record_break()
+        self._refresh_stat_cards()
         self._on_level_change(AlertLevel.HEALTHY)
+
+    def _refresh_stat_cards(self):
+        snap = self.db.snapshot()
+        self._stat_sessions.configure(text=str(snap["sessions_today"]))
+        self._stat_breaks.configure(text=str(snap["total_breaks"]))
+        streak = snap["current_streak"]
+        self._stat_streak.configure(text=f"{streak} day{'s' if streak != 1 else ''}")
 
     def _reset_after_unlock(self):
         self._go_outside()
@@ -281,12 +298,6 @@ class Dashboard(ctk.CTk):
             )
 
     def _on_cv_reading(self, reading):
-        """
-        Called every ~2 s with a fresh CVReading.
-        If CV confidence is high, boost the session's elapsed time slightly
-        to reflect detected indoor strain — even if the timer is short.
-        (Optional: tie CV score directly to threshold acceleration.)
-        """
         pass
 
     def _on_close(self):
