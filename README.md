@@ -17,6 +17,8 @@ pip install -r requirements.txt
 python main.py
 ```
 
+> **Note:** On Windows, the app will request administrator privileges via UAC on first launch. This is required for the lockout mechanism.
+
 > **Note:** On first webcam enable, mediapipe may download a small face landmark model (~5 MB) to your temp folder. This only happens once.
 
 ---
@@ -27,12 +29,16 @@ python main.py
 touch_grass/
 │
 ├── main.py
+├── rescue.py
+├── app.manifest
 ├── requirements.txt
+│
 ├── core/
 │   ├── config.py
 │   ├── session.py
 │   ├── cv_engine.py
 │   ├── stats_db.py
+│   ├── windows_lockout.py
 │   └── verification_server.py
 │
 ├── ui/
@@ -106,6 +112,31 @@ The `data/` folder is gitignored — it lives only on your machine.
 
 ---
 
+## Windows Lockout
+
+When lockout triggers, the app:
+
+- Blocks all keyboard and mouse input via `BlockInput()` (Win32)
+- Disables Task Manager via registry
+- Pins the lockout window as always-on-top
+- Re-applies the block every 500ms via a keepalive thread
+
+Everything is reversed the moment a valid unlock code is entered.
+
+### Auto-release safety timer
+
+The lockout automatically releases after **10 minutes** even without a code — this prevents permanent lockout if the app crashes. To adjust, change `AUTO_RELEASE_SECONDS` in `core/windows_lockout.py`.
+
+### Emergency rescue
+
+If you ever need to manually release the lockout, run from any terminal:
+
+```bash
+python rescue.py
+```
+
+---
+
 ## Mobile Unlock Flow
 
 When the lockout screen appears:
@@ -154,6 +185,6 @@ Click **Calibrate Baseline Now** in the camera panel after sitting down in good 
 | CV webcam detection | ✅ Done |
 | Mobile verification (WiFi + backup code) | ✅ Done |
 | Stats persistence & streaks across sessions | ✅ Done |
-| Real Windows lockout (blocks keyboard/mouse) | ⬜ Planned |
+| Real Windows lockout (blocks keyboard/mouse) | ✅ Done |
 | Settings screen (adjust thresholds in UI) | ⬜ Planned |
 | Strict photo verification (sky/brightness check) | ⬜ Planned |
