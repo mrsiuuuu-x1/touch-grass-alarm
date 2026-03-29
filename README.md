@@ -13,7 +13,7 @@ Monitors how long you've been sitting at your computer and forces you to go outs
 ## Setup
 
 ```bash
-pip install customtkinter opencv-python mediapipe numpy pillow qrcode[pil]
+pip install -r requirements.txt
 python main.py
 ```
 
@@ -26,26 +26,26 @@ python main.py
 ```
 touch_grass/
 │
-├── main.py                        ← Entry point — run this
+├── main.py
+├── requirements.txt
+├── core/
+│   ├── config.py
+│   ├── session.py
+│   ├── cv_engine.py
+│   ├── stats_db.py
+│   └── verification_server.py
 │
-├── core/                          ← Pure logic, no UI code
-│   ├── config.py                  ← Thresholds, colours, health facts
-│   ├── session.py                 ← Timer, alert level, break tracking
-│   ├── cv_engine.py               ← Webcam analysis (pallor, lighting, blue cast)
-│   ├── stats_db.py                ← Persistent stats (streaks, breaks, sessions)
-│   └── verification_server.py    ← Local HTTP server for mobile unlock flow
+├── ui/
+│   ├── dashboard.py
+│   ├── camera_panel.py
+│   ├── overlay.py
+│   ├── lockout.py
+│   └── widgets.py
 │
-├── ui/                            ← All visual components
-│   ├── dashboard.py               ← Main scrollable app window
-│   ├── camera_panel.py            ← Live webcam preview (expand/minimise)
-│   ├── overlay.py                 ← Critical-level warning popup
-│   ├── lockout.py                 ← Lockout screen with QR + backup code
-│   └── widgets.py                 ← Reusable buttons, stat cards, dividers
+├── data/
+│   └── stats.json
 │
-├── data/                          ← Auto-created at runtime, gitignored
-│   └── stats.json                 ← Persistent stats (do not edit manually)
-│
-└── assets/                        ← Icons, sounds (empty — add yours here)
+└── assets/
 ```
 
 ### Where to put new files
